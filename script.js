@@ -1,40 +1,33 @@
 const videoElement = document.getElementById("video");
 const canvasElement = document.getElementById("canvas");
-const canvasCtx = canvasElement.getContext("2d");
+const ctx = canvasElement.getContext("2d");
+
 const switchCameraBtn = document.getElementById("switchCameraBtn");
 const startBtn = document.getElementById("startBtn");
 
-let pose, camera;
 let useFrontCamera = false;
+let currentStream = null;
+let pose = null;
 
-// ✅ เริ่มต้นขอสิทธิ์กล้อง
+// ✅ ฟังก์ชันเปิดกล้อง
 async function setupCamera() {
+  if (currentStream) {
+    currentStream.getTracks().forEach(t => t.stop());
+  }
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
+    currentStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: useFrontCamera ? "user" : "environment" },
       audio: false
     });
-    videoElement.srcObject = stream;
+    videoElement.srcObject = currentStream;
     await videoElement.play();
-    return true;
-  } catch (e) {
-    alert("❌ ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการเข้าถึงกล้อง");
-    console.error(e);
-    return false;
+  } catch (err) {
+    alert("❌ กรุณาอนุญาตให้เข้าถึงกล้องใน Safari (Settings → Safari → Camera → Allow)");
+    console.error(err);
   }
 }
 
-// ✅ สลับกล้อง
-switchCameraBtn.addEventListener("click", async () => {
-  useFrontCamera = !useFrontCamera;
-  if (camera) {
-    camera.stop();
-  }
-  await setupCamera();
-  startPoseDetection();
-});
-
-// ✅ คำนวณมุม
+// ✅ ฟังก์ชันคำนวณมุม
 function angle(a, b, c) {
   const ab = { x: b.x - a.x, y: b.y - a.y };
   const cb = { x: b.x - c.x, y: b.y - c.y };
@@ -45,81 +38,81 @@ function angle(a, b, c) {
   return Math.acos(Math.min(Math.max(cos, -1), 1)) * (180 / Math.PI);
 }
 
-// ✅ คำนวณ REBA และผล
+// ✅ คำนวณ REBA
 function calculateREBA(landmarks) {
-  const w = parseFloat(document.getElementById("weight").value) || 0;
-  const activity = document.getElementById("activity").value;
+  if (!landmarks) return { score: 0, detail: [] };
+  const neck = angle(landmarks[0], landmarks[11], landmarks[12]);
+  const back = angle(landmarks[11], landmarks[23], landmarks[25]);
+  const arm = angle(landmarks[11], landmarks[13], landmarks[15]);
+  const leg = angle(landmarks[23], landmarks[25], landmarks[27]);
   let score = 0;
-  let detail = [];
-
-  const neckAngle = angle(landmarks[0], landmarks[11], landmarks[12]);
-  const backAngle = angle(landmarks[11], landmarks[23], landmarks[25]);
-  const armAngle = angle(landmarks[11], landmarks[13], landmarks[15]);
-  const legAngle = angle(landmarks[23], landmarks[25], landmarks[27]);
-
-  if (neckAngle < 60 || neckAngle > 120) score += 2;
-  if (backAngle < 160) score += 2;
-  if (armAngle < 80 || armAngle > 160) score += 2;
-  if (legAngle < 160) score += 1;
-  if (w > 5 && w <= 10) score += 1;
-  else if (w > 10) score += 2;
-  if (activity === "ยกของ") score += 1;
-  if (activity === "ก้ม") score += 1;
-
-  detail.push(`คอ: ${neckAngle.toFixed(1)}°`);
-  detail.push(`หลัง: ${backAngle.toFixed(1)}°`);
-  detail.push(`แขน: ${armAngle.toFixed(1)}°`);
-  detail.push(`ขา: ${legAngle.toFixed(1)}°`);
-
-  return { score, detail };
+  if (neck < 60 || neck > 120) score += 2;
+  if (back < 160) score += 2;
+  if (arm < 80 || arm > 160) score += 2;
+  if (leg < 160) score += 1;
+  return { 
+    score, 
+    detail: [
+      `คอ: ${neck.toFixed(1)}°`, 
+      `หลัง: ${back.toFixed(1)}°`,
+      `แขน: ${arm.toFixed(1)}°`,
+      ขา: ${leg.toFixed(1)}°
+    ]
+  };
 }
 
-// ✅ ระดับความเสี่ยงและคำแนะนำ
+// ✅ ระดับความเสี่ยง
 function getRiskLevel(score) {
   if (score <= 3) return ["ต่ำ", "ท่าทางดีมาก"];
   if (score <= 6) return ["ปานกลาง", "ควรปรับหลังตรงและลดการก้ม"];
   if (score <= 9) return ["สูง", "ควรหลีกเลี่ยงการยกของหนักหรือก้มมาก"];
-  return ["สูงมาก", "เสี่ยงมาก! ปรับท่าทางหรือใช้เครื่องช่วย"];
+  return ["สูงมาก", "เสี่ยงมาก! ควรปรับท่าทางหรือใช้เครื่องช่วย"];
 }
+
+// ✅ สลับกล้อง 🔃
+switchCameraBtn.addEventListener("click", async () => {
+  useFrontCamera = !useFrontCamera;
+  await setupCamera();
+});
 
 // ✅ เริ่มประเมิน
-async function startPoseDetection() {
-  pose = new Pose.Pose({
-    locateFile: (file) => https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}
-  });
+startBtn.addEventListener("click", async () => {
+  await setupCamera();
 
-  pose.setOptions({
-    modelComplexity: 1,
-    smoothLandmarks: true,
-    minDetectionConfidence: 0.5,
-    minTrackingConfidence: 0.5
-  });
+  // โหลดโมเดล Pose
+  if (!pose) {
+    pose = new Pose.Pose({
+      locateFile: (file) => https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}
+    });
+    pose.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+    pose.onResults(onResults);
+  }
 
-  pose.onResults(onResults);
+  async function detectionLoop() {
+    await pose.send({ image: videoElement });
+    requestAnimationFrame(detectionLoop);
+  }
+  detectionLoop();
+});
 
-  const cam = new CameraUtils.Camera(videoElement, {
-    onFrame: async () => {
-      await pose.send({ image: videoElement });
-    },
-    width: 640,
-    height: 480
-  });
-
-  cam.start();
-}
-
-// ✅ วาดผลลัพธ์
+// ✅ แสดงผล
 function onResults(results) {
-  canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-  canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+  ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+  ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
   if (!results.poseLandmarks) return;
 
+  // วาดจุด keypoints
   for (const kp of results.poseLandmarks) {
-    canvasCtx.beginPath();
-    canvasCtx.arc(kp.x * canvasElement.width, kp.y * canvasElement.height, 4, 0, 2 * Math.PI);
-    canvasCtx.fillStyle = "red";
-    canvasCtx.fill();
+    ctx.beginPath();
+    ctx.arc(kp.x * canvasElement.width, kp.y * canvasElement.height, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = "red";
+    ctx.fill();
   }
 
   const { score, detail } = calculateREBA(results.poseLandmarks);
@@ -129,17 +122,11 @@ function onResults(results) {
   document.getElementById("riskLevel").textContent = level;
   document.getElementById("adviceText").textContent = advice;
 
-  const ul = document.getElementById("angleDetails");
-  ul.innerHTML = "";
+  const list = document.getElementById("angleDetails");
+  list.innerHTML = "";
   detail.forEach(d => {
     const li = document.createElement("li");
     li.textContent = d;
-    ul.appendChild(li);
+    list.appendChild(li);
   });
 }
-
-// ✅ เริ่มเมื่อกดปุ่ม
-startBtn.addEventListener("click", async () => {
-  const ok = await setupCamera();
-  if (ok) startPoseDetection();
-});
