@@ -15,6 +15,16 @@ const activityInput = document.getElementById('activity');
 let pose, camera;
 let useFrontCamera = false;
 
+// ✅ ขอสิทธิ์กล้องก่อนเริ่ม
+async function requestCameraPermission() {
+  try {
+    await navigator.mediaDevices.getUserMedia({ video: true });
+  } catch (err) {
+    alert("❌ กรุณาอนุญาตให้เข้าถึงกล้องก่อนเริ่มประเมิน");
+  }
+}
+
+// ✅ คำนวณมุมองศา
 function angle(a, b, c) {
   const ab = { x: b.x - a.x, y: b.y - a.y };
   const cb = { x: b.x - c.x, y: b.y - c.y };
@@ -25,6 +35,7 @@ function angle(a, b, c) {
   return Math.acos(Math.max(-1, Math.min(1, cosTheta))) * (180 / Math.PI);
 }
 
+// ✅ ประเมิน REBA และมุม
 function calculateREBA(keypoints) {
   let score = 0;
   let details = [];
@@ -74,6 +85,7 @@ function calculateREBA(keypoints) {
   return { score, details };
 }
 
+// ✅ ระดับความเสี่ยง
 function getRiskLevel(score) {
   if (score <= 3) return "ต่ำ";
   if (score <= 5) return "ปานกลาง";
@@ -81,6 +93,7 @@ function getRiskLevel(score) {
   return "สูงมาก";
 }
 
+// ✅ คำแนะนำ
 function getAdvice(score) {
   if (score <= 3) return "ท่าทางดีมาก รักษาต่อเนื่อง";
   if (score <= 5) return "ปรับเล็กน้อย เช่น ตั้งหลังตรง ลดการก้ม";
@@ -88,6 +101,7 @@ function getAdvice(score) {
   return "เสี่ยงสูง! ควรปรับท่าทางหรือใช้เครื่องช่วยยก";
 }
 
+// ✅ เริ่มระบบประเมิน
 function startAssessment() {
   pose = new Pose({ locateFile: (file) => https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file} });
 
@@ -103,18 +117,22 @@ function startAssessment() {
   startCamera();
 }
 
+// ✅ กล้องหน้า/หลัง
 function startCamera() {
   if (camera) camera.stop();
+
+  const facingMode = useFrontCamera ? "user" : "environment";
 
   camera = new Camera(videoElement, {
     onFrame: async () => { await pose.send({ image: videoElement }); },
     width: 640,
     height: 480,
-    facingMode: useFrontCamera ? "user" : { exact: "environment" }
+    facingMode: facingMode
   });
   camera.start();
 }
 
+// ✅ เมื่อได้ผลลัพธ์จาก Pose
 function onResults(results) {
   canvasCtx.save();
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
@@ -147,9 +165,14 @@ function onResults(results) {
   canvasCtx.restore();
 }
 
+// ✅ ปุ่มสลับกล้อง
 switchCameraBtn.addEventListener('click', () => {
   useFrontCamera = !useFrontCamera;
   startCamera();
 });
 
-startBtn.addEventListener('click', startAssessment);
+// ✅ ปุ่มเริ่มประเมิน
+startBtn.addEventListener('click', async () => {
+  await requestCameraPermission();
+  startAssessment();
+});
