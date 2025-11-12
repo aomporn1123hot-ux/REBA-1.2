@@ -1,178 +1,145 @@
-const videoElement = document.getElementById('video');
-const canvasElement = document.getElementById('output');
-const canvasCtx = canvasElement.getContext('2d');
-
-const rebaScoreEl = document.getElementById('rebaScore');
-const riskLevelEl = document.getElementById('riskLevel');
-const angleDetailsEl = document.getElementById('angleDetails');
-const adviceTextEl = document.getElementById('adviceText');
-
-const startBtn = document.getElementById('startBtn');
-const switchCameraBtn = document.getElementById('switchCameraBtn');
-const weightInput = document.getElementById('weight');
-const activityInput = document.getElementById('activity');
+const videoElement = document.getElementById("video");
+const canvasElement = document.getElementById("canvas");
+const canvasCtx = canvasElement.getContext("2d");
+const switchCameraBtn = document.getElementById("switchCameraBtn");
+const startBtn = document.getElementById("startBtn");
 
 let pose, camera;
 let useFrontCamera = false;
 
-// ✅ ขอสิทธิ์กล้องก่อนเริ่ม
-async function requestCameraPermission() {
+// ✅ เริ่มต้นขอสิทธิ์กล้อง
+async function setupCamera() {
   try {
-    await navigator.mediaDevices.getUserMedia({ video: true });
-  } catch (err) {
-    alert("❌ กรุณาอนุญาตให้เข้าถึงกล้องก่อนเริ่มประเมิน");
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: useFrontCamera ? "user" : "environment" },
+      audio: false
+    });
+    videoElement.srcObject = stream;
+    await videoElement.play();
+    return true;
+  } catch (e) {
+    alert("❌ ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการเข้าถึงกล้อง");
+    console.error(e);
+    return false;
   }
 }
 
-// ✅ คำนวณมุมองศา
+// ✅ สลับกล้อง
+switchCameraBtn.addEventListener("click", async () => {
+  useFrontCamera = !useFrontCamera;
+  if (camera) {
+    camera.stop();
+  }
+  await setupCamera();
+  startPoseDetection();
+});
+
+// ✅ คำนวณมุม
 function angle(a, b, c) {
   const ab = { x: b.x - a.x, y: b.y - a.y };
   const cb = { x: b.x - c.x, y: b.y - c.y };
   const dot = ab.x * cb.x + ab.y * cb.y;
-  const magAB = Math.sqrt(ab.x**2 + ab.y**2);
-  const magCB = Math.sqrt(cb.x**2 + cb.y**2);
-  const cosTheta = dot / (magAB * magCB);
-  return Math.acos(Math.max(-1, Math.min(1, cosTheta))) * (180 / Math.PI);
+  const magAB = Math.sqrt(ab.x ** 2 + ab.y ** 2);
+  const magCB = Math.sqrt(cb.x ** 2 + cb.y ** 2);
+  const cos = dot / (magAB * magCB);
+  return Math.acos(Math.min(Math.max(cos, -1), 1)) * (180 / Math.PI);
 }
 
-// ✅ ประเมิน REBA และมุม
-function calculateREBA(keypoints) {
+// ✅ คำนวณ REBA และผล
+function calculateREBA(landmarks) {
+  const w = parseFloat(document.getElementById("weight").value) || 0;
+  const activity = document.getElementById("activity").value;
   let score = 0;
-  let details = [];
+  let detail = [];
 
-  const weight = parseFloat(weightInput.value) || 0;
-  const activity = activityInput.value;
+  const neckAngle = angle(landmarks[0], landmarks[11], landmarks[12]);
+  const backAngle = angle(landmarks[11], landmarks[23], landmarks[25]);
+  const armAngle = angle(landmarks[11], landmarks[13], landmarks[15]);
+  const legAngle = angle(landmarks[23], landmarks[25], landmarks[27]);
 
-  let neckAngle = 0, backAngle = 0, elbowAngle = 0, legAngle = 0;
-
-  if (keypoints[0] && keypoints[11] && keypoints[12]) {
-    neckAngle = angle(keypoints[0], keypoints[11], keypoints[12]);
-    if (neckAngle < 40 || neckAngle > 140) score += 2;
-    else if (neckAngle < 60 || neckAngle > 120) score += 1;
-  }
-
-  if (keypoints[11] && keypoints[23] && keypoints[25]) {
-    backAngle = angle(keypoints[11], keypoints[23], keypoints[25]);
-    if (backAngle < 140) score += 3;
-    else if (backAngle < 160) score += 2;
-    else score += 1;
-  }
-
-  if (keypoints[13] && keypoints[11] && keypoints[15]) {
-    elbowAngle = angle(keypoints[11], keypoints[13], keypoints[15]);
-    if (elbowAngle < 60 || elbowAngle > 120) score += 2;
-  }
-
-  if (keypoints[23] && keypoints[25] && keypoints[27]) {
-    legAngle = angle(keypoints[23], keypoints[25], keypoints[27]);
-    if (legAngle < 160) score += 2;
-  }
-
-  if (weight > 0) {
-    if (weight <= 5) score += 1;
-    else if (weight <= 10) score += 2;
-    else score += 3;
-  }
-
-  if (activity === "ก้ม") score += 1;
+  if (neckAngle < 60 || neckAngle > 120) score += 2;
+  if (backAngle < 160) score += 2;
+  if (armAngle < 80 || armAngle > 160) score += 2;
+  if (legAngle < 160) score += 1;
+  if (w > 5 && w <= 10) score += 1;
+  else if (w > 10) score += 2;
   if (activity === "ยกของ") score += 1;
+  if (activity === "ก้ม") score += 1;
 
-  details.push(`คอ: ${neckAngle.toFixed(1)}°`);
-  details.push(`หลัง: ${backAngle.toFixed(1)}°`);
-  details.push(`แขน: ${elbowAngle.toFixed(1)}°`);
-  details.push(`ขา: ${legAngle.toFixed(1)}°`);
+  detail.push(`คอ: ${neckAngle.toFixed(1)}°`);
+  detail.push(`หลัง: ${backAngle.toFixed(1)}°`);
+  detail.push(`แขน: ${armAngle.toFixed(1)}°`);
+  detail.push(`ขา: ${legAngle.toFixed(1)}°`);
 
-  return { score, details };
+  return { score, detail };
 }
 
-// ✅ ระดับความเสี่ยง
+// ✅ ระดับความเสี่ยงและคำแนะนำ
 function getRiskLevel(score) {
-  if (score <= 3) return "ต่ำ";
-  if (score <= 5) return "ปานกลาง";
-  if (score <= 7) return "สูง";
-  return "สูงมาก";
+  if (score <= 3) return ["ต่ำ", "ท่าทางดีมาก"];
+  if (score <= 6) return ["ปานกลาง", "ควรปรับหลังตรงและลดการก้ม"];
+  if (score <= 9) return ["สูง", "ควรหลีกเลี่ยงการยกของหนักหรือก้มมาก"];
+  return ["สูงมาก", "เสี่ยงมาก! ปรับท่าทางหรือใช้เครื่องช่วย"];
 }
 
-// ✅ คำแนะนำ
-function getAdvice(score) {
-  if (score <= 3) return "ท่าทางดีมาก รักษาต่อเนื่อง";
-  if (score <= 5) return "ปรับเล็กน้อย เช่น ตั้งหลังตรง ลดการก้ม";
-  if (score <= 7) return "เริ่มมีความเสี่ยง ปรับท่าทางขณะยกของ";
-  return "เสี่ยงสูง! ควรปรับท่าทางหรือใช้เครื่องช่วยยก";
-}
-
-// ✅ เริ่มระบบประเมิน
-function startAssessment() {
-  pose = new Pose({ locateFile: (file) => https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file} });
+// ✅ เริ่มประเมิน
+async function startPoseDetection() {
+  pose = new Pose.Pose({
+    locateFile: (file) => https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}
+  });
 
   pose.setOptions({
     modelComplexity: 1,
     smoothLandmarks: true,
-    enableSegmentation: false,
     minDetectionConfidence: 0.5,
     minTrackingConfidence: 0.5
   });
 
   pose.onResults(onResults);
-  startCamera();
-}
 
-// ✅ กล้องหน้า/หลัง
-function startCamera() {
-  if (camera) camera.stop();
-
-  const facingMode = useFrontCamera ? "user" : "environment";
-
-  camera = new Camera(videoElement, {
-    onFrame: async () => { await pose.send({ image: videoElement }); },
+  const cam = new CameraUtils.Camera(videoElement, {
+    onFrame: async () => {
+      await pose.send({ image: videoElement });
+    },
     width: 640,
-    height: 480,
-    facingMode: facingMode
+    height: 480
   });
-  camera.start();
+
+  cam.start();
 }
 
-// ✅ เมื่อได้ผลลัพธ์จาก Pose
+// ✅ วาดผลลัพธ์
 function onResults(results) {
-  canvasCtx.save();
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
   canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-  if (results.poseLandmarks) {
-    for (const kp of results.poseLandmarks) {
-      canvasCtx.beginPath();
-      canvasCtx.arc(kp.x * canvasElement.width, kp.y * canvasElement.height, 5, 0, 2 * Math.PI);
-      canvasCtx.fillStyle = "red";
-      canvasCtx.fill();
-    }
+  if (!results.poseLandmarks) return;
 
-    const { score, details } = calculateREBA(results.poseLandmarks);
-    const risk = getRiskLevel(score);
-    const advice = getAdvice(score);
-
-    rebaScoreEl.textContent = score;
-    riskLevelEl.textContent = risk;
-    adviceTextEl.textContent = advice;
-
-    angleDetailsEl.innerHTML = "";
-    details.forEach(d => {
-      const li = document.createElement("li");
-      li.textContent = d;
-      angleDetailsEl.appendChild(li);
-    });
+  for (const kp of results.poseLandmarks) {
+    canvasCtx.beginPath();
+    canvasCtx.arc(kp.x * canvasElement.width, kp.y * canvasElement.height, 4, 0, 2 * Math.PI);
+    canvasCtx.fillStyle = "red";
+    canvasCtx.fill();
   }
 
-  canvasCtx.restore();
+  const { score, detail } = calculateREBA(results.poseLandmarks);
+  const [level, advice] = getRiskLevel(score);
+
+  document.getElementById("rebaScore").textContent = score;
+  document.getElementById("riskLevel").textContent = level;
+  document.getElementById("adviceText").textContent = advice;
+
+  const ul = document.getElementById("angleDetails");
+  ul.innerHTML = "";
+  detail.forEach(d => {
+    const li = document.createElement("li");
+    li.textContent = d;
+    ul.appendChild(li);
+  });
 }
 
-// ✅ ปุ่มสลับกล้อง
-switchCameraBtn.addEventListener('click', () => {
-  useFrontCamera = !useFrontCamera;
-  startCamera();
-});
-
-// ✅ ปุ่มเริ่มประเมิน
-startBtn.addEventListener('click', async () => {
-  await requestCameraPermission();
-  startAssessment();
+// ✅ เริ่มเมื่อกดปุ่ม
+startBtn.addEventListener("click", async () => {
+  const ok = await setupCamera();
+  if (ok) startPoseDetection();
 });
