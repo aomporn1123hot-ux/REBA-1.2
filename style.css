@@ -90,20 +90,31 @@ canvas {
   text-align: left;
 }
 
-#startBtn {
+button {
   width: 100%;
   padding: 12px;
   font-size: 1.1em;
   cursor: pointer;
   border: none;
-  background-color: #4CAF50;
-  color: white;
   border-radius: 8px;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
+  color: white;
+}
+
+#startBtn {
+  background-color: #4CAF50;
+}
+
+#captureBtn {
+  background-color: #f39c12;
 }
 
 #startBtn:hover {
   background-color: #45a049;
+}
+
+#captureBtn:hover {
+  background-color: #e67e22;
 }
 
 #scoreResult {
