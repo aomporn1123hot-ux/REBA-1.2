@@ -1,23 +1,23 @@
 body {
   margin: 0;
   font-family: "Sarabun", sans-serif;
-  background: #f8fafb;
+  background: #f9fbfc;
   color: #222;
 }
 
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   background: #004aad;
   color: white;
   padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .switch-btn {
   background: #2196f3;
-  color: white;
   border: none;
+  color: white;
   font-size: 22px;
   padding: 8px 14px;
   border-radius: 50%;
@@ -25,43 +25,46 @@ body {
 }
 .switch-btn:hover { background: #1976d2; }
 
-.main {
+.container {
   display: flex;
-  flex-direction: row;
   flex-wrap: wrap;
-  justify-content: center;
   padding: 10px;
 }
 
-.left, .right {
+.camera-box {
   flex: 1;
+  position: relative;
   min-width: 300px;
   margin: 5px;
 }
 
-.left {
-  position: relative;
-}
 video, canvas {
   width: 100%;
-  border-radius: 10px;
-  border: 2px solid #d0e7ff;
+  border-radius: 8px;
+  border: 2px solid #b3e5fc;
 }
+
 canvas {
   position: absolute;
   left: 0;
   top: 0;
-  opacity: 0.7;
-  width: 100%;
+  opacity: 0.8;
 }
 
-.controls {
-  background: #fff;
+.info-box {
+  flex: 1;
+  min-width: 300px;
   padding: 10px;
-  border-radius: 10px;
+}
+
+.controls, .results, #details, #adviceBox {
+  background: white;
+  padding: 10px;
   margin-bottom: 10px;
+  border-radius: 10px;
   box-shadow: 0 0 4px rgba(0,0,0,0.1);
 }
+
 .start-btn {
   background: #00c853;
   color: white;
@@ -72,25 +75,7 @@ canvas {
 }
 .start-btn:hover { background: #009624; }
 
-.results {
-  background: #e3f2fd;
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 10px;
-}
-
-#details, #adviceBox {
-  background: #fff;
-  padding: 10px;
-  border-radius: 10px;
-  box-shadow: 0 0 4px rgba(0,0,0,0.1);
-  margin-bottom: 10px;
-}
 #angleDetails {
   list-style: none;
   padding: 0;
-  margin: 0;
-}
-#angleDetails li {
-  margin: 4px 0;
 }
