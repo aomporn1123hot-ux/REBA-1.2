@@ -1,55 +1,64 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>REBA Camera Pro</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+
+  <!-- โหลด MediaPipe -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
 </head>
+
 <body>
   <header class="header">
     <h1>REBA Camera Pro</h1>
-    <button id="switchCameraBtn" class="switch-btn">🔃</button>
+    <button id="switchCameraBtn" class="switch-btn" title="สลับกล้อง 🔃">🔃</button>
   </header>
 
   <main class="container">
-    <div class="camera-box">
-      <video id="video" playsinline></video>
-      <canvas id="canvas"></canvas>
+    <!-- ✅ กล่องกล้อง -->
+    <div class="camera-container">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="canvas" width="640" height="480"></canvas>
     </div>
 
-    <div class="info-box">
-      <div class="controls">
-        <label>น้ำหนัก (กก.) <input type="number" id="weight" value="0" min="0" max="50"></label>
-        <label>กิจกรรม
-          <select id="activity">
-            <option value="none">เลือกกิจกรรม</option>
-            <option value="ยกของ">ยกของ</option>
-            <option value="ก้ม">ก้ม</option>
-            <option value="เดิน">เดิน</option>
-          </select>
-        </label>
-        <button id="startBtn" class="start-btn">เริ่มประเมิน</button>
-      </div>
+    <!-- ✅ ส่วนป้อนข้อมูล -->
+    <div class="control-panel">
+      <label>น้ำหนัก (กก.)</label>
+      <input type="number" id="weightInput" min="0" value="0">
+      
+      <label>กิจกรรม</label>
+      <select id="activitySelect">
+        <option value="">เลือกกิจกรรม</option>
+        <option>ยกของ</option>
+        <option>ก้มพรวนดิน</option>
+        <option>ยืนทำงาน</option>
+        <option>นั่งทำงาน</option>
+      </select>
 
-      <div class="results">
-        <h3>ผลการประเมิน</h3>
-        <p>คะแนนรวม REBA: <span id="rebaScore">0</span></p>
-        <p>ระดับความเสี่ยง: <span id="riskLevel">-</span></p>
-      </div>
-
-      <div id="details">
-        <h3>รายละเอียดท่าทาง</h3>
-        <ul id="angleDetails"></ul>
-      </div>
-
-      <div id="adviceBox">
-        <h3>คำแนะนำ</h3>
-        <p id="adviceText">–</p>
-      </div>
+      <button id="startBtn" class="start-btn">เริ่มประเมิน</button>
     </div>
+
+    <!-- ✅ ส่วนแสดงผลคะแนน -->
+    <section class="results">
+      <h2>ผลการประเมิน</h2>
+      <p>คะแนนรวม REBA: <span id="rebaScore">0</span></p>
+      <p>ระดับความเสี่ยง: <span id="riskLevel">-</span></p>
+    </section>
+
+    <!-- ✅ ส่วนรายละเอียดมุม -->
+    <section class="details">
+      <h3>รายละเอียดท่าทาง</h3>
+      <ul id="angleDetails"></ul>
+    </section>
+
+    <!-- ✅ ส่วนคำแนะนำ -->
+    <section class="advice">
+      <h3>คำแนะนำ</h3>
+      <p id="adviceText">-</p>
+    </section>
   </main>
 
   <script src="script.js"></script>
