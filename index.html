@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>REBA Camera Pro</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
 </head>
 <body>
   <header class="header">
@@ -14,17 +14,15 @@
     <button id="switchCameraBtn" class="switch-btn">🔃</button>
   </header>
 
-  <main class="main">
-    <section class="left">
-      <video id="video" autoplay playsinline></video>
-      <canvas id="output"></canvas>
-    </section>
+  <main class="container">
+    <div class="camera-box">
+      <video id="video" playsinline></video>
+      <canvas id="canvas"></canvas>
+    </div>
 
-    <section class="right">
+    <div class="info-box">
       <div class="controls">
-        <label>น้ำหนักวัตถุ (กก.)
-          <input type="number" id="weight" value="0" min="0" max="50">
-        </label>
+        <label>น้ำหนัก (กก.) <input type="number" id="weight" value="0" min="0" max="50"></label>
         <label>กิจกรรม
           <select id="activity">
             <option value="none">เลือกกิจกรรม</option>
@@ -37,6 +35,7 @@
       </div>
 
       <div class="results">
+        <h3>ผลการประเมิน</h3>
         <p>คะแนนรวม REBA: <span id="rebaScore">0</span></p>
         <p>ระดับความเสี่ยง: <span id="riskLevel">-</span></p>
       </div>
@@ -47,10 +46,10 @@
       </div>
 
       <div id="adviceBox">
-        <h3>คำแนะนำปรับท่าทาง</h3>
+        <h3>คำแนะนำ</h3>
         <p id="adviceText">–</p>
       </div>
-    </section>
+    </div>
   </main>
 
   <script src="script.js"></script>
