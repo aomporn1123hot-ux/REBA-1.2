@@ -23,10 +23,7 @@ body {
   border-radius: 50%;
   cursor: pointer;
 }
-
-.switch-btn:hover {
-  background: #1976d2;
-}
+.switch-btn:hover { background: #1976d2; }
 
 .main {
   display: flex;
@@ -45,13 +42,11 @@ body {
 .left {
   position: relative;
 }
-
 video, canvas {
   width: 100%;
   border-radius: 10px;
   border: 2px solid #d0e7ff;
 }
-
 canvas {
   position: absolute;
   left: 0;
@@ -67,7 +62,6 @@ canvas {
   margin-bottom: 10px;
   box-shadow: 0 0 4px rgba(0,0,0,0.1);
 }
-
 .start-btn {
   background: #00c853;
   color: white;
@@ -76,10 +70,7 @@ canvas {
   border-radius: 8px;
   cursor: pointer;
 }
-
-.start-btn:hover {
-  background: #009624;
-}
+.start-btn:hover { background: #009624; }
 
 .results {
   background: #e3f2fd;
@@ -95,13 +86,11 @@ canvas {
   box-shadow: 0 0 4px rgba(0,0,0,0.1);
   margin-bottom: 10px;
 }
-
 #angleDetails {
   list-style: none;
   padding: 0;
   margin: 0;
 }
-
 #angleDetails li {
   margin: 4px 0;
 }
