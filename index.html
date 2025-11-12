@@ -9,18 +9,18 @@
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 </head>
 <body>
-  <div class="header">
+  <header class="header">
     <h1>REBA Camera Pro</h1>
     <button id="switchCameraBtn" class="switch-btn">🔃</button>
-  </div>
+  </header>
 
-  <div class="main">
-    <div class="left">
+  <main class="main">
+    <section class="left">
       <video id="video" autoplay playsinline></video>
       <canvas id="output"></canvas>
-    </div>
+    </section>
 
-    <div class="right">
+    <section class="right">
       <div class="controls">
         <label>น้ำหนักวัตถุ (กก.)
           <input type="number" id="weight" value="0" min="0" max="50">
@@ -50,8 +50,8 @@
         <h3>คำแนะนำปรับท่าทาง</h3>
         <p id="adviceText">–</p>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 
   <script src="script.js"></script>
 </body>
